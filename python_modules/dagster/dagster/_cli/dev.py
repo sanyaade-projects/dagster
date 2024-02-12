@@ -118,6 +118,8 @@ def dev_command(
             ' running "pip install dagster-webserver" in your Python environment.'
         )
 
+    os.environ["DAGSTER_DEV"] = "1"
+
     configure_loggers(formatter=log_format, log_level=log_level.upper())
     logger = logging.getLogger("dagster")
 
