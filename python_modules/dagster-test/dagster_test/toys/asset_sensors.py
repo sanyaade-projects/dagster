@@ -59,6 +59,9 @@ def log_asset_sensor_job():
     job=log_asset_sensor_job,
 )
 def asset_a_and_b_sensor(context):
+    import time
+
+    time.sleep(60)
     asset_events = context.latest_materialization_records_by_key()
     if all(asset_events.values()):
         context.advance_all_cursors()
