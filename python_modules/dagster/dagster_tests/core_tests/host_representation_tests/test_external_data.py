@@ -267,7 +267,7 @@ def test_input_name_matches_output_name():
     def something(result):
         pass
 
-    assets_job = build_assets_job("assets_job", [something], source_assets=[not_result])
+    assets_job = build_assets_job("assets_job", [something], loadable_assets=[not_result])
     external_asset_nodes = external_asset_nodes_from_defs([assets_job], source_assets_by_key={})
 
     assert external_asset_nodes == [
@@ -434,7 +434,7 @@ def test_cross_job_asset_dependency():
         assert asset1 == 1
 
     assets_job1 = build_assets_job("assets_job1", [asset1])
-    assets_job2 = build_assets_job("assets_job2", [asset2], source_assets=[asset1])
+    assets_job2 = build_assets_job("assets_job2", [asset2], loadable_assets=[asset1])
     external_asset_nodes = external_asset_nodes_from_defs(
         [assets_job1, assets_job2], source_assets_by_key={}
     )
@@ -705,7 +705,7 @@ def test_source_asset_with_op():
     def bar(foo):
         pass
 
-    assets_job = build_assets_job("assets_job", [bar], source_assets=[foo])
+    assets_job = build_assets_job("assets_job", [bar], loadable_assets=[foo])
 
     external_asset_nodes = external_asset_nodes_from_defs([assets_job], source_assets_by_key={})
     assert external_asset_nodes == [
@@ -773,7 +773,7 @@ def test_used_source_asset():
     def foo(bar):
         assert bar
 
-    job1 = build_assets_job("job1", [foo], source_assets=[bar])
+    job1 = build_assets_job("job1", [foo], loadable_assets=[bar])
 
     external_asset_nodes = external_asset_nodes_from_defs(
         [job1], source_assets_by_key={AssetKey("bar"): bar}
@@ -1228,11 +1228,21 @@ def test_external_time_window_valid_partition_key():
 def test_external_assets_def_to_external_asset_graph() -> None:
     asset_one = next(iter(external_assets_from_specs([AssetSpec("asset_one")])))
 
-    assets_job = build_assets_job("assets_job", [asset_one])
-    external_asset_nodes = external_asset_nodes_from_defs([assets_job], source_assets_by_key={})
+    @asset
+    def asset_two(asset_one):
+        ...
 
-    assert len(external_asset_nodes) == 1
-    assert next(iter(external_asset_nodes)).is_executable is False
+    assets_job = build_assets_job(
+        "assets_job", executable_assets=[asset_two], loadable_assets=[asset_one]
+    )
+
+    external_asset_nodes = {
+        asset_node.asset_key: asset_node
+        for asset_node in external_asset_nodes_from_defs([assets_job], source_assets_by_key={})
+    }
+    assert len(external_asset_nodes) == 2
+    assert not external_asset_nodes[asset_one.key].is_executable
+    assert external_asset_nodes[asset_two.key].is_executable
 
 
 def test_historical_external_asset_node_that_models_underlying_external_assets_def() -> None:

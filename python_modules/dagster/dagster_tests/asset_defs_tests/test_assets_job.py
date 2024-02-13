@@ -275,7 +275,7 @@ def test_source_asset():
     job = build_assets_job(
         "a",
         [asset1],
-        source_assets=[
+        loadable_assets=[
             SourceAsset(
                 AssetKey("source1"), io_manager_key="special_io_manager", metadata={"a": "b"}
             )
@@ -306,7 +306,7 @@ def test_missing_io_manager():
         build_assets_job(
             "a",
             [asset1],
-            source_assets=[SourceAsset(AssetKey("source1"), io_manager_key="special_io_manager")],
+            loadable_assets=[SourceAsset(AssetKey("source1"), io_manager_key="special_io_manager")],
         )
 
 
@@ -334,7 +334,7 @@ def test_source_op_asset():
     job = build_assets_job(
         "a",
         [asset1],
-        source_assets=[source1],
+        loadable_assets=[source1],
         resource_defs={"special_io_manager": my_io_manager},
     )
     assert job.graph.node_defs == [asset1.op]
@@ -1294,7 +1294,7 @@ def test_subset_of_asset_job():
 
 
 def test_subset_of_build_assets_job():
-    foo_job = build_assets_job("foo_job", assets=[foo, bar, foo_bar, baz])
+    foo_job = build_assets_job("foo_job", executable_assets=[foo, bar, foo_bar, baz])
     with instance_for_test() as instance:
         result = foo_job.execute_in_process(
             instance=instance,
@@ -1698,7 +1698,7 @@ def test_source_asset_io_manager_def():
         return my_source_asset + 4
 
     source_asset_job = build_assets_job(
-        name="test", assets=[my_derived_asset], source_assets=[my_source_asset]
+        name="test", executable_assets=[my_derived_asset], loadable_assets=[my_source_asset]
     )
 
     result = source_asset_job.execute_in_process(asset_selection=[AssetKey("my_derived_asset")])
@@ -1726,8 +1726,8 @@ def test_source_asset_io_manager_not_provided():
 
     source_asset_job = build_assets_job(
         "the_job",
-        assets=[my_derived_asset],
-        source_assets=[my_source_asset],
+        executable_assets=[my_derived_asset],
+        loadable_assets=[my_source_asset],
         resource_defs={"io_manager": the_manager},
     )
 
@@ -1756,8 +1756,8 @@ def test_source_asset_io_manager_key_provided():
 
     source_asset_job = build_assets_job(
         "the_job",
-        assets=[my_derived_asset],
-        source_assets=[my_source_asset],
+        executable_assets=[my_derived_asset],
+        loadable_assets=[my_source_asset],
         resource_defs={"some_key": the_manager},
     )
 
@@ -1796,8 +1796,8 @@ def test_source_asset_requires_resource_defs():
 
     source_asset_job = build_assets_job(
         "the_job",
-        assets=[my_derived_asset],
-        source_assets=[my_source_asset],
+        executable_assets=[my_derived_asset],
+        loadable_assets=[my_source_asset],
     )
 
     result = source_asset_job.execute_in_process(asset_selection=[AssetKey("my_derived_asset")])
@@ -1821,7 +1821,7 @@ def test_other_asset_provides_req():
         DagsterInvalidDefinitionError,
         match="resource with key 'foo' required by op 'asset_reqs_foo' was not provided.",
     ):
-        build_assets_job(name="test", assets=[asset_reqs_foo, asset_provides_foo])
+        build_assets_job(name="test", executable_assets=[asset_reqs_foo, asset_provides_foo])
 
 
 @ignore_warning("Parameter `resource_defs` .* is experimental")
@@ -1838,7 +1838,7 @@ def test_transitive_deps_not_provided():
         DagsterInvalidDefinitionError,
         match="resource with key 'foo' required by resource with key 'unused' was not provided.",
     ):
-        build_assets_job(name="test", assets=[the_asset])
+        build_assets_job(name="test", executable_assets=[the_asset])
 
 
 @ignore_warning("Parameter `resource_defs` .* is experimental")
@@ -1853,7 +1853,7 @@ def test_transitive_resource_deps_provided():
     def the_asset():
         pass
 
-    the_job = build_assets_job(name="test", assets=[the_asset])
+    the_job = build_assets_job(name="test", executable_assets=[the_asset])
     assert the_job.execute_in_process().success
 
 
@@ -1879,7 +1879,9 @@ def test_transitive_io_manager_dep_not_provided():
             " was not provided."
         ),
     ):
-        build_assets_job(name="test", assets=[my_derived_asset], source_assets=[my_source_asset])
+        build_assets_job(
+            name="test", executable_assets=[my_derived_asset], loadable_assets=[my_source_asset]
+        )
 
 
 def test_resolve_dependency_in_group():
@@ -2044,7 +2046,9 @@ def test_coerce_resource_build_asset_job() -> None:
         executed["yes"] = True
 
     a_job = build_assets_job(
-        "my_job", assets=[an_asset], resource_defs={"bare_resource": BareResourceObject()}
+        "my_job",
+        executable_assets=[an_asset],
+        resource_defs={"bare_resource": BareResourceObject()},
     )
 
     assert a_job.execute_in_process().success
@@ -2087,7 +2091,7 @@ def test_async_multi_asset():
             context.log.info(v.output_name)
             yield v
 
-    aio_job = build_assets_job(name="test", assets=[aio_gen_asset])
+    aio_job = build_assets_job(name="test", executable_assets=[aio_gen_asset])
     result = aio_job.execute_in_process()
     assert result.success
 

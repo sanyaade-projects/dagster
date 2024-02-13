@@ -136,7 +136,9 @@ def test_source_assets_no_key_provided():
     # generic key is used as the io manager key for the source asset.
     assert transformed_source.get_io_manager_key() == "io_manager"
 
-    the_job = build_assets_job("the_job", [transformed_derived], source_assets=[transformed_source])
+    the_job = build_assets_job(
+        "the_job", [transformed_derived], loadable_assets=[transformed_source]
+    )
 
     result = the_job.execute_in_process()
     assert result.success
@@ -169,7 +171,9 @@ def test_source_assets_key_provided():
     # generic key is used as the io manager key for the source asset.
     assert transformed_source.get_io_manager_key() == "the_manager"
 
-    the_job = build_assets_job("the_job", [transformed_derived], source_assets=[transformed_source])
+    the_job = build_assets_job(
+        "the_job", [transformed_derived], loadable_assets=[transformed_source]
+    )
 
     result = the_job.execute_in_process()
     assert result.success
@@ -202,7 +206,9 @@ def test_source_assets_manager_def_provided():
     # override key.
     assert transformed_source.io_manager_def == the_manager
 
-    the_job = build_assets_job("the_job", [transformed_derived], source_assets=[transformed_source])
+    the_job = build_assets_job(
+        "the_job", [transformed_derived], loadable_assets=[transformed_source]
+    )
 
     result = the_job.execute_in_process()
     assert result.success
@@ -354,7 +360,7 @@ def test_source_asset_partial_resources():
     def my_derived_asset(my_source_asset):
         return my_source_asset + 4
 
-    the_job = build_assets_job("the_job", [my_derived_asset], source_assets=[transformed_source])
+    the_job = build_assets_job("the_job", [my_derived_asset], loadable_assets=[transformed_source])
 
     result = the_job.execute_in_process()
     assert result.success

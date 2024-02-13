@@ -1335,8 +1335,8 @@ def never_runs_asset(
 
 hanging_job = build_assets_job(
     name="hanging_job",
-    source_assets=[dummy_source_asset],
-    assets=[first_asset, hanging_asset, never_runs_asset],
+    loadable_assets=[dummy_source_asset],
+    executable_assets=[first_asset, hanging_asset, never_runs_asset],
     resource_defs={
         "io_manager": IOManagerDefinition.hardcoded_io_manager(DummyIOManager()),
         "hanging_asset_resource": hanging_asset_resource,
@@ -1383,7 +1383,7 @@ def downstream_asset(hanging_graph):
 
 hanging_graph_asset_job = build_assets_job(
     name="hanging_graph_asset_job",
-    assets=[hanging_graph_asset, downstream_asset],
+    executable_assets=[hanging_graph_asset, downstream_asset],
     resource_defs={
         "hanging_asset_resource": hanging_asset_resource,
         "io_manager": IOManagerDefinition.hardcoded_io_manager(DummyIOManager()),
@@ -1401,7 +1401,7 @@ def asset_two(asset_one):
     return asset_one + 1
 
 
-two_assets_job = build_assets_job(name="two_assets_job", assets=[asset_one, asset_two])
+two_assets_job = build_assets_job(name="two_assets_job", executable_assets=[asset_one, asset_two])
 
 
 @asset
@@ -1412,7 +1412,9 @@ def executable_asset() -> None:
 unexecutable_asset = next(iter(external_assets_from_specs([AssetSpec("unexecutable_asset")])))
 
 executable_test_job = build_assets_job(
-    name="executable_test_job", assets=[executable_asset, unexecutable_asset]
+    name="executable_test_job",
+    executable_assets=[executable_asset],
+    loadable_assets=[unexecutable_asset],
 )
 
 static_partitions_def = StaticPartitionsDefinition(["a", "b", "c", "d", "e", "f"])
@@ -1455,7 +1457,7 @@ def downstream_dynamic_partitioned_asset(
 
 dynamic_partitioned_assets_job = build_assets_job(
     "dynamic_partitioned_assets_job",
-    assets=[upstream_dynamic_partitioned_asset, downstream_dynamic_partitioned_asset],
+    executable_assets=[upstream_dynamic_partitioned_asset, downstream_dynamic_partitioned_asset],
 )
 
 
@@ -1529,7 +1531,7 @@ def yield_partition_materialization():
 
 partition_materialization_job = build_assets_job(
     "partition_materialization_job",
-    assets=[yield_partition_materialization],
+    executable_assets=[yield_partition_materialization],
     executor_def=in_process_executor,
 )
 
@@ -1543,7 +1545,7 @@ def fail_partition_materialization(context):
 
 fail_partition_materialization_job = build_assets_job(
     "fail_partition_materialization_job",
-    assets=[fail_partition_materialization],
+    executable_assets=[fail_partition_materialization],
     executor_def=in_process_executor,
 )
 
@@ -1562,7 +1564,7 @@ def hanging_partition_asset(context):
 
 hanging_partition_asset_job = build_assets_job(
     "hanging_partition_asset_job",
-    assets=[hanging_partition_asset],
+    executable_assets=[hanging_partition_asset],
     executor_def=in_process_executor,
     resource_defs={
         "io_manager": IOManagerDefinition.hardcoded_io_manager(DummyIOManager()),
@@ -1580,7 +1582,7 @@ def asset_yields_observation():
 
 observation_job = build_assets_job(
     "observation_job",
-    assets=[asset_yields_observation],
+    executable_assets=[asset_yields_observation],
     executor_def=in_process_executor,
 )
 
