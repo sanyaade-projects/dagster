@@ -247,7 +247,7 @@ class GrapheneAssetNode(graphene.ObjectType):
     _latest_materialization_loader: Optional[BatchMaterializationLoader]
     _stale_status_loader: Optional[StaleStatusLoader]
     _asset_checks_loader: AssetChecksLoader
-    _parent__asset_graph_differ: Optional[ParentAssetGraphDiffer]
+    _parent_asset_graph_differ: Optional[ParentAssetGraphDiffer]
 
     # NOTE: properties/resolvers are listed alphabetically
     assetKey = graphene.NonNull(GrapheneAssetKey)
