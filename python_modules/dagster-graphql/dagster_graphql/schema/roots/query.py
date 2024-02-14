@@ -5,6 +5,7 @@ import graphene
 from dagster import AssetCheckKey
 from dagster._core.definitions.events import AssetKey
 from dagster._core.definitions.external_asset_graph import ExternalAssetGraph
+from dagster._core.definitions.parent_asset_graph_differ import ParentAssetGraphDiffer
 from dagster._core.definitions.partition import CachingDynamicPartitionsLoader
 from dagster._core.definitions.selector import (
     InstigatorSelector,
@@ -952,6 +953,16 @@ class GrapheneQuery(graphene.ObjectType):
             asset_graph=load_asset_graph,
         )
 
+        parent_deployment_context = graphene_info.context.get_parent_deployment_context()
+        if parent_deployment_context is not None:
+            parent_asset_graph_differ = ParentAssetGraphDiffer(
+                instance=graphene_info.context.instance,
+                branch_asset_graph=lambda: ExternalAssetGraph.from_workspace(graphene_info.context),
+                parent_asset_graph=lambda: ExternalAssetGraph.from_workspace(
+                    parent_deployment_context
+                ),
+            )
+
         nodes = [
             GrapheneAssetNode(
                 node.repository_location,
@@ -962,6 +973,7 @@ class GrapheneQuery(graphene.ObjectType):
                 depended_by_loader=depended_by_loader,
                 stale_status_loader=stale_status_loader,
                 dynamic_partitions_loader=dynamic_partitions_loader,
+                parent_asset_graph_differ=parent_asset_graph_differ,
             )
             for node in results
         ]

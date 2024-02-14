@@ -13,6 +13,7 @@ from dagster._core.definitions.data_version import (
     StaleStatus,
 )
 from dagster._core.definitions.external_asset_graph import ExternalAssetGraph
+from dagster._core.definitions.parent_asset_graph_differ import ChangeReason, ParentAssetGraphDiffer
 from dagster._core.definitions.partition import CachingDynamicPartitionsLoader, PartitionsDefinition
 from dagster._core.definitions.partition_mapping import PartitionMapping
 from dagster._core.definitions.sensor_definition import (
@@ -107,6 +108,8 @@ GrapheneAssetStaleStatus = graphene.Enum.from_enum(StaleStatus, name="StaleStatu
 GrapheneAssetStaleCauseCategory = graphene.Enum.from_enum(
     StaleCauseCategory, name="StaleCauseCategory"
 )
+
+GrapheneAssetChangedInBranchReason = graphene.Enum.from_enum(ChangeReason, name="ChangeReason")
 
 
 class GrapheneUserAssetOwner(graphene.ObjectType):
@@ -244,6 +247,7 @@ class GrapheneAssetNode(graphene.ObjectType):
     _latest_materialization_loader: Optional[BatchMaterializationLoader]
     _stale_status_loader: Optional[StaleStatusLoader]
     _asset_checks_loader: AssetChecksLoader
+    _parent__asset_graph_differ: Optional[ParentAssetGraphDiffer]
 
     # NOTE: properties/resolvers are listed alphabetically
     assetKey = graphene.NonNull(GrapheneAssetKey)
@@ -266,6 +270,7 @@ class GrapheneAssetNode(graphene.ObjectType):
     backfillPolicy = graphene.Field(GrapheneBackfillPolicy)
     computeKind = graphene.String()
     configField = graphene.Field(GrapheneConfigTypeField)
+    changedInBranchReasons = graphene.Field(non_null_list(GrapheneAssetChangedInBranchReason))
     dataVersion = graphene.Field(graphene.String(), partition=graphene.String())
     dataVersionByPartition = graphene.Field(
         graphene.NonNull(graphene.List(graphene.String)),
@@ -348,6 +353,7 @@ class GrapheneAssetNode(graphene.ObjectType):
         depended_by_loader: Optional[CrossRepoAssetDependedByLoader] = None,
         stale_status_loader: Optional[StaleStatusLoader] = None,
         dynamic_partitions_loader: Optional[CachingDynamicPartitionsLoader] = None,
+        parent_asset_graph_differ: Optional[ParentAssetGraphDiffer] = None,
     ):
         from ..implementation.fetch_assets import get_unique_asset_id
 
@@ -378,6 +384,9 @@ class GrapheneAssetNode(graphene.ObjectType):
         )
         self._asset_checks_loader = check.inst_param(
             asset_checks_loader, "asset_checks_loader", AssetChecksLoader
+        )
+        self._parent_asset_graph_differ = check.opt_inst_param(
+            parent_asset_graph_differ, "parent_asset_graph_differ", ParentAssetGraphDiffer
         )
         self._external_job = None  # lazily loaded
         self._node_definition_snap = None  # lazily loaded
@@ -418,6 +427,10 @@ class GrapheneAssetNode(graphene.ObjectType):
             "stale_status_loader must exist in order to access data versioning information",
         )
         return loader
+
+    @property
+    def parent_asset_graph_differ(self) -> Optional[ParentAssetGraphDiffer]:
+        return self._parent_asset_graph_differ
 
     def get_external_job(self) -> ExternalJob:
         if self._external_job is None:
@@ -672,6 +685,15 @@ class GrapheneAssetNode(graphene.ObjectType):
 
     def resolve_computeKind(self, _graphene_info: ResolveInfo) -> Optional[str]:
         return self._external_asset_node.compute_kind
+
+    def resolve_changedInBranchReasons(
+        self, graphene_info: ResolveInfo
+    ) -> Sequence[Any]:  # Sequence[GrapheneAssetChangedInBranchReason]
+        if self.parent_asset_graph_differ is None:
+            return []
+        return self.parent_asset_graph_differ.get_changes_for_asset(
+            self._external_asset_node.asset_key
+        )
 
     def resolve_staleStatus(
         self, graphene_info: ResolveInfo, partition: Optional[str] = None

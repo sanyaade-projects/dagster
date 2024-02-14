@@ -370,6 +370,7 @@ class GrapheneRepository(graphene.ObjectType):
                 asset_checks_loader=asset_checks_loader,
                 stale_status_loader=self._stale_status_loader,
                 dynamic_partitions_loader=self._dynamic_partitions_loader,
+                parent_asset_graph_differ=self._parent_asset_graph_differ,
             )
             for external_asset_node in self._repository.get_external_asset_nodes()
         ]
