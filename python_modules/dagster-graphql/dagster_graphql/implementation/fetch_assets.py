@@ -193,14 +193,9 @@ def get_asset_nodes_by_asset_key(
     )
 
     parent_deployment_context = graphene_info.context.get_parent_deployment_context()
-    if parent_deployment_context is not None:
-        parent_asset_graph_differ = ParentAssetGraphDiffer(
-            instance=graphene_info.context.instance,
-            branch_asset_graph=lambda: ExternalAssetGraph.from_workspace(graphene_info.context),
-            parent_asset_graph=lambda: ExternalAssetGraph.from_workspace(parent_deployment_context),
-        )
-    else:
-        parent_asset_graph_differ = None
+    parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
+        branch_workspace=graphene_info.context, parent_workspace=parent_deployment_context
+    )
 
     dynamic_partitions_loader = CachingDynamicPartitionsLoader(graphene_info.context.instance)
 

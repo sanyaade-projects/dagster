@@ -272,16 +272,9 @@ class GrapheneRepository(graphene.ObjectType):
         self._dynamic_partitions_loader = CachingDynamicPartitionsLoader(instance)
 
         parent_deployment_context = workspace_context.get_parent_deployment_context()
-        if parent_deployment_context is not None:
-            self._parent_asset_graph_differ = ParentAssetGraphDiffer(
-                instance=instance,
-                branch_asset_graph=lambda: ExternalAssetGraph.from_external_repository(repository),
-                parent_asset_graph=lambda: ExternalAssetGraph.from_workspace(
-                    parent_deployment_context
-                ),
-            )
-        else:
-            self._parent_asset_graph_differ = None
+        self._parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
+            branch_workspace=workspace_context, parent_workspace=parent_deployment_context
+        )
         super().__init__(name=repository.name)
 
     def resolve_id(self, _graphene_info: ResolveInfo):

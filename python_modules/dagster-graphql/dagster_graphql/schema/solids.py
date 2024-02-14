@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Union
 import dagster._check as check
 import graphene
 from dagster._core.definitions import NodeHandle
-from dagster._core.definitions.external_asset_graph import ExternalAssetGraph
 from dagster._core.definitions.parent_asset_graph_differ import ParentAssetGraphDiffer
 from dagster._core.host_representation import RepresentedJob
 from dagster._core.host_representation.external import ExternalJob
@@ -438,16 +437,9 @@ class ISolidDefinitionMixin:
                 context=graphene_info.context, asset_keys=[node.asset_key for node in nodes]
             )
             parent_deployment_context = graphene_info.context.get_parent_deployment_context()
-            if parent_deployment_context is not None:
-                parent_asset_graph_differ = ParentAssetGraphDiffer(
-                    instance=graphene_info.context.instance,
-                    branch_asset_graph=lambda: ExternalAssetGraph.from_workspace(
-                        graphene_info.context
-                    ),
-                    parent_asset_graph=lambda: ExternalAssetGraph.from_workspace(
-                        parent_deployment_context
-                    ),
-                )
+            parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
+                branch_workspace=graphene_info.context, parent_workspace=parent_deployment_context
+            )
             return [
                 GrapheneAssetNode(
                     location,
