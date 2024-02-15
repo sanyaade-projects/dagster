@@ -1231,6 +1231,11 @@ class DagsterInstance(DynamicPartitionsStore):
             else None
         )
 
+        if job_snapshot:
+            from ..op_concurrency_limits_counter import compute_concurrency_tags_for_snapshot
+
+            tags = {**tags, **compute_concurrency_tags_for_snapshot(job_snapshot)}
+
         return DagsterRun(
             job_name=job_name,
             run_id=run_id,
