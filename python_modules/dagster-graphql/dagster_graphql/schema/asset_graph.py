@@ -268,9 +268,9 @@ class GrapheneAssetNode(graphene.ObjectType):
         limit=graphene.Int(),
     )
     backfillPolicy = graphene.Field(GrapheneBackfillPolicy)
+    changedInBranchReasons = graphene.Field(non_null_list(GrapheneAssetChangedInBranchReason))
     computeKind = graphene.String()
     configField = graphene.Field(GrapheneConfigTypeField)
-    changedInBranchReasons = graphene.Field(non_null_list(GrapheneAssetChangedInBranchReason))
     dataVersion = graphene.Field(graphene.String(), partition=graphene.String())
     dataVersionByPartition = graphene.Field(
         graphene.NonNull(graphene.List(graphene.String)),
@@ -429,8 +429,12 @@ class GrapheneAssetNode(graphene.ObjectType):
         return loader
 
     @property
-    def parent_asset_graph_differ(self) -> Optional[ParentAssetGraphDiffer]:
-        return self._parent_asset_graph_differ
+    def parent_asset_graph_differ(self) -> ParentAssetGraphDiffer:
+        differ = check.not_none(
+            self._parent_asset_graph_differ,
+            "parent_asset_graph_differ must exist in order to access branch deployment change reasons",
+        )
+        return differ
 
     def get_external_job(self) -> ExternalJob:
         if self._external_job is None:
@@ -689,8 +693,6 @@ class GrapheneAssetNode(graphene.ObjectType):
     def resolve_changedInBranchReasons(
         self, graphene_info: ResolveInfo
     ) -> Sequence[Any]:  # Sequence[GrapheneAssetChangedInBranchReason]
-        if self.parent_asset_graph_differ is None:
-            return []
         return self.parent_asset_graph_differ.get_changes_for_asset(
             self._external_asset_node.asset_key
         )
