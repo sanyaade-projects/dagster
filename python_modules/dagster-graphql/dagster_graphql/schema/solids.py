@@ -437,16 +437,19 @@ class ISolidDefinitionMixin:
                 context=graphene_info.context, asset_keys=[node.asset_key for node in nodes]
             )
             parent_deployment_context = graphene_info.context.get_parent_deployment_context()
-            parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
-                branch_workspace=graphene_info.context, parent_workspace=parent_deployment_context
-            )
+
             return [
                 GrapheneAssetNode(
                     location,
                     ext_repo,
                     node,
                     asset_checks_loader=asset_checks_loader,
-                    parent_asset_graph_differ=parent_asset_graph_differ,
+                    parent_asset_graph_differ=ParentAssetGraphDiffer.from_external_repositories(
+                        code_location_name=location.name,
+                        repository_name=ext_repo.name,
+                        branch_workspace=graphene_info.context,
+                        parent_workspace=parent_deployment_context,
+                    ),
                 )
                 for node in nodes
             ]

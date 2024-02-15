@@ -429,12 +429,8 @@ class GrapheneAssetNode(graphene.ObjectType):
         return loader
 
     @property
-    def parent_asset_graph_differ(self) -> ParentAssetGraphDiffer:
-        differ = check.not_none(
-            self._parent_asset_graph_differ,
-            "parent_asset_graph_differ must exist in order to access branch deployment change reasons",
-        )
-        return differ
+    def parent_asset_graph_differ(self) -> Optional[ParentAssetGraphDiffer]:
+        return self._parent_asset_graph_differ
 
     def get_external_job(self) -> ExternalJob:
         if self._external_job is None:
@@ -693,6 +689,9 @@ class GrapheneAssetNode(graphene.ObjectType):
     def resolve_changedInBranchReasons(
         self, graphene_info: ResolveInfo
     ) -> Sequence[Any]:  # Sequence[GrapheneAssetChangedInBranchReason]
+        if self.parent_asset_graph_differ is None:
+            # parent_asset_graph_differ is None when not in a branch deployment
+            return []
         return self.parent_asset_graph_differ.get_changes_for_asset(
             self._external_asset_node.asset_key
         )

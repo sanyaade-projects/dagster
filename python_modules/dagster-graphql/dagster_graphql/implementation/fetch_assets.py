@@ -192,11 +192,6 @@ def get_asset_nodes_by_asset_key(
         asset_graph=lambda: ExternalAssetGraph.from_workspace(graphene_info.context),
     )
 
-    parent_deployment_context = graphene_info.context.get_parent_deployment_context()
-    parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
-        branch_workspace=graphene_info.context, parent_workspace=parent_deployment_context
-    )
-
     dynamic_partitions_loader = CachingDynamicPartitionsLoader(graphene_info.context.instance)
 
     asset_nodes_by_asset_key: Dict[
@@ -218,6 +213,8 @@ def get_asset_nodes_by_asset_key(
         asset_keys=asset_nodes_by_asset_key.keys(),
     )
 
+    parent_deployment_context = graphene_info.context.get_parent_deployment_context()
+
     return {
         external_asset_node.asset_key: GrapheneAssetNode(
             repo_loc,
@@ -227,7 +224,12 @@ def get_asset_nodes_by_asset_key(
             depended_by_loader=depended_by_loader,
             stale_status_loader=stale_status_loader,
             dynamic_partitions_loader=dynamic_partitions_loader,
-            parent_asset_graph_differ=parent_asset_graph_differ,
+            parent_asset_graph_differ=ParentAssetGraphDiffer.from_external_repositories(
+                code_location_name=repo_loc.name,
+                repository_name=repo.name,
+                branch_workspace=graphene_info.context,
+                parent_workspace=parent_deployment_context,
+            ),
         )
         for repo_loc, repo, external_asset_node in asset_nodes_by_asset_key.values()
     }

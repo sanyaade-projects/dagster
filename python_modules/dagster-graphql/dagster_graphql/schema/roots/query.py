@@ -954,9 +954,6 @@ class GrapheneQuery(graphene.ObjectType):
         )
 
         parent_deployment_context = graphene_info.context.get_parent_deployment_context()
-        parent_asset_graph_differ = ParentAssetGraphDiffer.from_workspaces(
-            branch_workspace=graphene_info.context, parent_workspace=parent_deployment_context
-        )
 
         nodes = [
             GrapheneAssetNode(
@@ -968,7 +965,12 @@ class GrapheneQuery(graphene.ObjectType):
                 depended_by_loader=depended_by_loader,
                 stale_status_loader=stale_status_loader,
                 dynamic_partitions_loader=dynamic_partitions_loader,
-                parent_asset_graph_differ=parent_asset_graph_differ,
+                parent_asset_graph_differ=ParentAssetGraphDiffer.from_external_repositories(
+                    code_location_name=node.repository_location.name,
+                    repository_name=node.external_repository.name,
+                    branch_workspace=graphene_info.context,
+                    parent_workspace=parent_deployment_context,
+                ),
             )
             for node in results
         ]
