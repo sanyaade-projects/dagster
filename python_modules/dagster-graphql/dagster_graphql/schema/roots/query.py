@@ -953,6 +953,7 @@ class GrapheneQuery(graphene.ObjectType):
             asset_graph=load_asset_graph,
         )
 
+        # parent_deployment_context will be None if we are not in a branch deployment
         parent_deployment_context = graphene_info.context.get_parent_deployment_context()
 
         nodes = [
@@ -965,6 +966,7 @@ class GrapheneQuery(graphene.ObjectType):
                 depended_by_loader=depended_by_loader,
                 stale_status_loader=stale_status_loader,
                 dynamic_partitions_loader=dynamic_partitions_loader,
+                # parent_asset_graph_differ will be None if we are not in a branch deployment
                 parent_asset_graph_differ=ParentAssetGraphDiffer.from_external_repositories(
                     code_location_name=node.repository_location.name,
                     repository_name=node.external_repository.name,

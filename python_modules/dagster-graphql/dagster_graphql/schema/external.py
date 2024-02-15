@@ -271,6 +271,7 @@ class GrapheneRepository(graphene.ObjectType):
         )
         self._dynamic_partitions_loader = CachingDynamicPartitionsLoader(instance)
 
+        # parent_deployment_context will be None if we are not in a branch deployment
         parent_deployment_context = workspace_context.get_parent_deployment_context()
         # self._parent_asset_graph_differ will be None if we are not in a branch deployment
         self._parent_asset_graph_differ = ParentAssetGraphDiffer.from_external_repositories(

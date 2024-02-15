@@ -213,6 +213,7 @@ def get_asset_nodes_by_asset_key(
         asset_keys=asset_nodes_by_asset_key.keys(),
     )
 
+    # parent_deployment_context will be None if we are not in a branch deployment
     parent_deployment_context = graphene_info.context.get_parent_deployment_context()
 
     return {
@@ -224,6 +225,7 @@ def get_asset_nodes_by_asset_key(
             depended_by_loader=depended_by_loader,
             stale_status_loader=stale_status_loader,
             dynamic_partitions_loader=dynamic_partitions_loader,
+            # parent_asset_graph_differ will be None if we are not in a branch deployment
             parent_asset_graph_differ=ParentAssetGraphDiffer.from_external_repositories(
                 code_location_name=repo_loc.name,
                 repository_name=repo.name,
