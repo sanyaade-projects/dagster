@@ -7,7 +7,6 @@ from dagster import (
     AssetCheckSpec,
     AssetExecutionContext,
     AssetKey,
-    AssetOut,
     AssetSpec,
     IOManager,
     StaticPartitionsDefinition,
@@ -15,7 +14,7 @@ from dagster import (
     build_op_context,
     instance_for_test,
     materialize,
-    multi_asset,
+    multi_observable_source_asset,
 )
 from dagster._core.definitions.asset_check_spec import AssetCheckKey
 from dagster._core.definitions.asset_spec import (
@@ -45,22 +44,6 @@ def _external_observable_asset(**kwargs) -> Callable[..., AssetsDefinition]:
     def _decorator(fn: Callable[..., Any]) -> AssetsDefinition:
         new_kwargs = _with_observe_metadata(kwargs)
         return asset(**new_kwargs)(fn)
-
-    return _decorator
-
-
-def _external_observable_multi_asset(**kwargs) -> Callable[..., AssetsDefinition]:
-    def _decorator(fn: Callable[..., Any]) -> AssetsDefinition:
-        if "outs" in kwargs:
-            kwargs["outs"] = {
-                name: AssetOut(**_with_observe_metadata(out._asdict()))
-                for name, out in kwargs["outs"].items()
-            }
-        elif "specs" in kwargs:
-            kwargs["specs"] = [
-                AssetSpec(**_with_observe_metadata(spec._asdict())) for spec in kwargs["specs"]
-            ]
-        return multi_asset(**kwargs)(fn)
 
     return _decorator
 
@@ -141,7 +124,7 @@ def test_return_observe_result_with_asset_checks():
 
 
 def test_multi_asset_observe_result():
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def outs_multi_asset():
         return ObserveResult(asset_key="one", metadata=({"foo": "bar"})), ObserveResult(
             asset_key="two", metadata={"baz": "qux"}
@@ -153,7 +136,7 @@ def test_multi_asset_observe_result():
     assert res[0].metadata["foo"] == "bar"
     assert res[1].metadata["baz"] == "qux"
 
-    @_external_observable_multi_asset(
+    @multi_observable_source_asset(
         specs=[
             AssetSpec(["prefix", "one"]),
             AssetSpec(["prefix", "two"]),
@@ -175,7 +158,7 @@ def test_yield_materialization_multi_asset():
     #
     # yield successful
     #
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def multi():
         yield ObserveResult(
             asset_key="one",
@@ -198,7 +181,7 @@ def test_yield_materialization_multi_asset():
     #
     # missing a non optional out
     #
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def missing():
         yield ObserveResult(
             asset_key="one",
@@ -223,7 +206,7 @@ def test_yield_materialization_multi_asset():
     #
     # missing asset_key
     #
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def no_key():
         yield ObserveResult(
             metadata={"one": 1},
@@ -253,7 +236,7 @@ def test_yield_materialization_multi_asset():
     #
     # return tuple success
     #
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def ret_multi():
         return (
             ObserveResult(
@@ -278,7 +261,7 @@ def test_yield_materialization_multi_asset():
     #
     # return list error
     #
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def ret_list():
         return [
             ObserveResult(
@@ -331,7 +314,7 @@ def test_observe_result_output_typing():
         [asset_with_type_annotation], resources={"io_manager": TestingIOManager()}
     ).success
 
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def multi_asset_with_outs_and_type_annotation() -> Tuple[ObserveResult, ObserveResult]:
         return ObserveResult(asset_key="one"), ObserveResult(asset_key="two")
 
@@ -339,7 +322,7 @@ def test_observe_result_output_typing():
         [multi_asset_with_outs_and_type_annotation], resources={"io_manager": TestingIOManager()}
     ).success
 
-    @_external_observable_multi_asset(specs=[AssetSpec("one"), AssetSpec("two")])
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def multi_asset_with_specs_and_type_annotation() -> Tuple[ObserveResult, ObserveResult]:
         return ObserveResult(asset_key="one"), ObserveResult(asset_key="two")
 
@@ -347,7 +330,7 @@ def test_observe_result_output_typing():
         [multi_asset_with_specs_and_type_annotation], resources={"io_manager": TestingIOManager()}
     ).success
 
-    @_external_observable_multi_asset(specs=[AssetSpec("one"), AssetSpec("two")])
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def multi_asset_with_specs_and_no_type_annotation():
         return ObserveResult(asset_key="one"), ObserveResult(asset_key="two")
 
@@ -381,7 +364,7 @@ def test_observe_result_output_typing():
         resources={"io_manager": TestingIOManager()},
     ).success
 
-    @_external_observable_multi_asset(
+    @multi_observable_source_asset(
         specs=[
             AssetSpec("asset_one"),
             AssetSpec("asset_two"),
@@ -451,7 +434,7 @@ def test_observe_result_generators():
     assert len(res) == 1
     assert res[0].metadata["foo"] == "bar"
 
-    @_external_observable_multi_asset(specs=[AssetSpec("one"), AssetSpec("two")])
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def generator_specs_multi_asset():
         yield ObserveResult(asset_key="one", metadata={"foo": "bar"})
         yield ObserveResult(asset_key="two", metadata={"baz": "qux"})
@@ -466,7 +449,7 @@ def test_observe_result_generators():
     assert res[0].metadata["foo"] == "bar"
     assert res[1].metadata["baz"] == "qux"
 
-    @_external_observable_multi_asset(outs={"one": AssetOut(), "two": AssetOut()})
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     def generator_outs_multi_asset():
         yield ObserveResult(asset_key="one", metadata={"foo": "bar"})
         yield ObserveResult(asset_key="two", metadata={"baz": "qux"})
@@ -481,7 +464,7 @@ def test_observe_result_generators():
     assert res[0].metadata["foo"] == "bar"
     assert res[1].metadata["baz"] == "qux"
 
-    @_external_observable_multi_asset(specs=[AssetSpec("one"), AssetSpec("two")])
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     async def async_specs_multi_asset():
         return ObserveResult(asset_key="one", metadata={"foo": "bar"}), ObserveResult(
             asset_key="two", metadata={"baz": "qux"}
@@ -497,7 +480,7 @@ def test_observe_result_generators():
     assert res[0].metadata["foo"] == "bar"
     assert res[1].metadata["baz"] == "qux"
 
-    @_external_observable_multi_asset(specs=[AssetSpec("one"), AssetSpec("two")])
+    @multi_observable_source_asset(specs=[AssetSpec("one"), AssetSpec("two")])
     async def async_gen_specs_multi_asset():
         yield ObserveResult(asset_key="one", metadata={"foo": "bar"})
         yield ObserveResult(asset_key="two", metadata={"baz": "qux"})

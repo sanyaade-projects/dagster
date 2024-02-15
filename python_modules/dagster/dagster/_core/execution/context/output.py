@@ -693,15 +693,11 @@ class OutputContext:
             **normalize_metadata(metadata),
         }
 
-    def get_logged_metadata(
-        self,
-    ) -> Mapping[str, MetadataValue]:
+    def get_logged_metadata(self) -> Mapping[str, MetadataValue]:
         """Get the mapping of metadata entries that have been logged for use with this output."""
         return self._user_generated_metadata
 
-    def consume_logged_metadata(
-        self,
-    ) -> Mapping[str, MetadataValue]:
+    def consume_logged_metadata(self) -> Mapping[str, MetadataValue]:
         """Pops and yields all user-generated metadata entries that have been recorded from this context.
 
         If consume_logged_metadata has not yet been called, this will yield all logged events since
