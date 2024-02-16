@@ -5,6 +5,9 @@ import tempfile
 from typing import List
 
 import pytest
+from dagster._core.test_utils import ensure_dagster_tests_import
+
+ensure_dagster_tests_import()
 
 
 def get_pyright_reveal_type_output(filename) -> List[str]:
