@@ -2062,9 +2062,9 @@ def test_asset_owners():
     def my_asset():
         pass
 
-    assert my_asset.owners_by_key == {
-        my_asset.key: [TeamAssetOwner("team1"), UserAssetOwner("claire@dagsterlabs.com")]
-    }
+    owners = {my_asset.key: [TeamAssetOwner("team1"), UserAssetOwner("claire@dagsterlabs.com")]}
+    assert my_asset.owners_by_key == owners
+    assert my_asset.with_attributes().owners_by_key == owners  # copies ok
 
     @asset(owners=[])
     def asset_2():
