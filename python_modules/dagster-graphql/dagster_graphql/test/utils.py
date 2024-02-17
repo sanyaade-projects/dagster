@@ -4,6 +4,9 @@ from typing import Any, Dict, Iterator, Mapping, Optional, Sequence
 
 import dagster._check as check
 import graphene
+from dagster._core.definitions.repository_definition.valid_definitions import (
+    SINGLETON_REPOSITORY_NAME,
+)
 from dagster._core.host_representation.external import ExternalRepository
 from dagster._core.instance import DagsterInstance
 from dagster._core.test_utils import wait_for_runs_to_finish
@@ -171,7 +174,7 @@ def infer_repository_selector(graphql_context: WorkspaceRequestContext) -> Selec
         repository = next(iter(repositories.values()))
     else:
         code_location = graphql_context.get_code_location("test")
-        repository = code_location.get_repository("test_repo")
+        repository = code_location.get_repository(SINGLETON_REPOSITORY_NAME)
 
     return {
         "repositoryLocationName": code_location.name,
